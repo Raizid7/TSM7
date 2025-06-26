@@ -122,7 +122,7 @@ void playGame2() {
 void setup() {
   Serial.begin(9600);
   randomSeed(analogRead(A5));  // Noise-based seed
-  Serial.println("Welcome to the Football Skill Game!");
+  Serial.println("Welcome to SkillSocc!");
   Serial.println("Choose a game: Type '1' or '2'");
 }
 
