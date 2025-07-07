@@ -3,10 +3,11 @@ const int fsrInstep = A0;   // FSR 1: Instep
 const int fsrInside = A1;   // FSR 2: Inside
 
 // Threshold for sensor activation (tune as needed)
-const int threshold = 100;
+//// The sensor generates reverse readings, with smaller reading corresponding to higher force
+const int threshold = 400;
 
 // Game settings
-const int sequenceLength = 10;
+const int sequenceLength = 3;  //// Decrease from 10 to 3 for faster debugging
 int game1Sequence[sequenceLength];  // 0: instep, 1: inside
 
 // Timing
@@ -32,14 +33,15 @@ int readKick() {
   int instepValue = analogRead(fsrInstep);
   int insideValue = analogRead(fsrInside);
 
-  if (instepValue > threshold && insideValue > threshold) {
+  //// The sensor generates reverse readings, with smaller reading corresponding to higher force
+  if (instepValue < threshold && insideValue < threshold) {
     Serial.println("Error: Both sensors triggered. Use one at a time.");
     delay(1000);
     return -1;
   }
 
-  if (instepValue > threshold) return 0;
-  if (insideValue > threshold) return 1;
+  if (instepValue < threshold) return 0;
+  if (insideValue < threshold) return 1;
 
   return -1;  // No valid input
 }
@@ -55,6 +57,7 @@ void playGame1() {
   delay(1000);
 
   // Generate random sequence
+  //// May need different or modifiable lengths for each mode
   for (int i = 0; i < sequenceLength; i++) {
     game1Sequence[i] = random(0, 2); // 0 or 1
     Serial.print(i + 1);
@@ -64,6 +67,7 @@ void playGame1() {
   }
 
   // Hide the sequence
+  //// No code to hide the sequence here; this function may not be supported in Arduino
   Serial.println("Now reproduce the sequence!");
   delay(2000);
   Serial.println("Start kicking!");
@@ -127,7 +131,7 @@ void playGame2() {
 
     Serial.println("Correct!");
     score++;
-    delay(500);
+    delay(200);  //// The delay should be short to receive the next instruction in time before the ball falls to the ground
   }
 
   Serial.print("Your score: ");
@@ -151,7 +155,7 @@ void loop() {
       buzzing(3);
       playGame2();
     } else {
-      Serial.println("Invalid input. Type '1' or '2'");
+      Serial.println("Invalid input. Type '1' or '2'");  //// This error message is always shown once, no clue why
     }
 
     Serial.println("Choose a game: Type '1' or '2'");
