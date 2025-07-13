@@ -1,0 +1,85 @@
+import processing.serial.*;
+
+Serial myPort;
+String portName = "COM3"; // 🔧 Change this to match your system's port
+String displayText = "";
+
+PFont font;
+Button game1Button, game2Button, resetButton;
+
+void setup() {
+  size(600, 400);
+  font = createFont("Arial", 16);
+  textFont(font);
+
+  println(Serial.list()); // Shows available ports in console
+  myPort = new Serial(this, portName, 9600);
+  myPort.bufferUntil('\n');
+
+  game1Button = new Button("Play Game 1", 60, 300, () -> sendToArduino('1'));
+  game2Button = new Button("Play Game 2", 240, 300, () -> sendToArduino('2'));
+  resetButton = new Button("Reset", 420, 300, () -> resetDisplay());
+
+  displayText = "👟 Welcome to SkillSocc!\n\nChoose a game:\n▶ Game 1: Sequence Memory\n▶ Game 2: Endless Mode";
+}
+
+void draw() {
+  background(255);
+  fill(0);
+  textAlign(LEFT, TOP);
+  text(displayText, 20, 20, width - 40, height - 100);
+
+  game1Button.display();
+  game2Button.display();
+  resetButton.display();
+}
+
+void mousePressed() {
+  game1Button.checkClick(mouseX, mouseY);
+  game2Button.checkClick(mouseX, mouseY);
+  resetButton.checkClick(mouseX, mouseY);
+}
+
+void serialEvent(Serial p) {
+  String incoming = p.readStringUntil('\n');
+  if (incoming != null) {
+    displayText += "\n" + incoming.trim();
+    println(incoming.trim()); // Also print to console
+  }
+}
+
+void sendToArduino(char command) {
+  myPort.write(command);
+  displayText += "\n\n📤 Sent command: " + command;
+}
+
+void resetDisplay() {
+  displayText = "👟 Welcome to SkillSocc!\n\nChoose a game:\n▶ Game 1: Sequence Memory\n▶ Game 2: Endless Mode";
+}
+
+class Button {
+  String label;
+  int x, y, w = 140, h = 40;
+  Runnable action;
+
+  Button(String label, int x, int y, Runnable action) {
+    this.label = label;
+    this.x = x;
+    this.y = y;
+    this.action = action;
+  }
+
+  void display() {
+    fill(220);
+    rect(x, y, w, h, 10);
+    fill(0);
+    textAlign(CENTER, CENTER);
+    text(label, x + w/2, y + h/2);
+  }
+
+  void checkClick(int mx, int my) {
+    if (mx > x && mx < x + w && my > y && my < y + h) {
+      action.run();
+    }
+  }
+}
