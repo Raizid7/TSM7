@@ -21,6 +21,10 @@ int game1Button = 2;
 int game2Button = 3;
 int resetButton = 4;
 
+// which game is on true is on (might not need)
+// boolean g1state = false;
+// boolean g2state = false;
+
 
 void buzzing(int numOfSounds){
   for(int i = 0; i < numOfSounds; i++){
