@@ -1,9 +1,29 @@
+#include <SoftwareSerial.h>
+#include "functions.h"
+
 // Pin definitions
 const int fsrInstep = A0;   // FSR 1: Instep
 const int fsrInside = A1;   // FSR 2: Inside
 
+// buzzer
+const int buzzer = 9;
+
+// button （change if you need)
+const int game1Button = 2;
+const int game2Button = 3;
+const int resetButton = 4;
+
+// which game is on true is on (might not need)
+// boolean g1state = false;
+// boolean g2state = false;
+
+// Bluetooth
+const int BTrxPin = 10;
+const int BTtxPin = 11;
+SoftwareSerial BTSerial(BTrxPin,BTtxPin);  // Virtual port for bluetooth module; Rx, Tx pins
+
 // Threshold for sensor activation (tune as needed)
-//// The sensor generates reverse readings, with smaller reading corresponding to higher force
+// The sensor generates reverse readings, with smaller reading corresponding to higher force
 const int threshold = 400;
 
 // Game settings
@@ -13,177 +33,59 @@ int game1Sequence[sequenceLength];  // 0: instep, 1: inside
 // Timing
 unsigned long inputTimeout = 10000;  // Timeout per step in ms
 
-// buzzer
-const int buzzer = 9;
-
-// button （change if you need)
-int game1Button = 2;
-int game2Button = 3;
-int resetButton = 4;
-
-// which game is on true is on (might not need)
-// boolean g1state = false;
-// boolean g2state = false;
-
-
-void buzzing(int numOfSounds){
-  for(int i = 0; i < numOfSounds; i++){
-    tone(buzzer, 1000);
-    delay(1000);
-    noTone(buzzer);
-    if (i != numOfSounds - 1){
-      delay(1000);
-    }
-  }
-
-}
-
-// Helper to get sensor hit
-int readKick() {
-  int instepValue = analogRead(fsrInstep);
-  int insideValue = analogRead(fsrInside);
-
-  //// The sensor generates reverse readings, with smaller reading corresponding to higher force
-  if (instepValue < threshold && insideValue < threshold) {
-    Serial.println("Error: Both sensors triggered. Use one at a time.");
-    delay(1000);
-    return -1;
-  }
-
-  if (instepValue < threshold) return 0;
-  if (insideValue < threshold) return 1;
-
-  return -1;  // No valid input
-}
-
-// Display kick type
-String kickType(int code) {
-  return code == 0 ? "INSTEP" : "INSIDE";
-}
-
-// Game 1: Memorize and repeat
-void playGame1() {
-  Serial.println("Game 1: Memorize the kick sequence.");
-  delay(1000);
-
-  // Generate random sequence
-  //// May need different or modifiable lengths for each mode
-  for (int i = 0; i < sequenceLength; i++) {
-    game1Sequence[i] = random(0, 2); // 0 or 1
-    Serial.print(i + 1);
-    Serial.print(": ");
-    Serial.println(kickType(game1Sequence[i]));
-    delay(1000);
-  }
-
-  // Hide the sequence
-  //// No code to hide the sequence here; this function may not be supported in Arduino
-  Serial.println("Now reproduce the sequence!");
-  delay(2000);
-  Serial.println("Start kicking!");
-
-  // User input
-  for (int i = 0; i < sequenceLength; i++) {
-    unsigned long startTime = millis();
-    int kick = -1;
-    while (millis() - startTime < inputTimeout) {
-      kick = readKick();
-      if (kick != -1) break;
-    }
-
-    if (kick == -1) {
-      Serial.println("Timeout! Failed.");
-      return;
-    }
-
-    if (kick != game1Sequence[i]) {
-      Serial.print("Wrong kick at step ");
-      Serial.println(i + 1);
-      Serial.println("Failed.");
-      return;
-    }
-
-    Serial.print("Correct: ");
-    Serial.println(kickType(kick));
-    delay(500);
-  }
-
-  Serial.println("Win! You completed the sequence.");
-}
-
-// Game 2: Endless mode
-void playGame2() {
-  Serial.println("Game 2: Endless mode. Follow the kicks.");
-  delay(1000);
-  
-  int score = 0;
-  while (true) {
-    int expectedKick = random(0, 2);
-    Serial.print("Kick: ");
-    Serial.println(kickType(expectedKick));
-
-    unsigned long startTime = millis();
-    int kick = -1;
-    while (millis() - startTime < inputTimeout) {
-      kick = readKick();
-      if (kick != -1) break;
-    }
-
-    if (kick == -1) {
-      Serial.println("Timeout! Game over.");
-      break;
-    }
-
-    if (kick != expectedKick) {
-      Serial.println("Wrong kick! Game over.");
-      break;
-    }
-
-    Serial.println("Correct!");
-    score++;
-    delay(200);  //// The delay should be short to receive the next instruction in time before the ball falls to the ground
-  }
-
-  Serial.print("Your score: ");
-  Serial.println(score);
-}
-
 void setup() {
-  pinMode(game1Button, INPUT_PULLUP);
-  pinMode(game2Button, INPUT_PULLUP);
-  pinMode(resetButton, INPUT_PULLUP);
+  pinMode(game1Button,INPUT);
+  pinMode(game2Button,INPUT);
+  pinMode(resetButton,INPUT);
   Serial.begin(9600);
+  BTSerial.begin(9600);
   randomSeed(analogRead(A5));  // Noise-based seed
-  Serial.println("Welcome to SkillSocc!");
-  Serial.println("Choose a game: Press Button '1' or '2'"); // type buttonn
+  doublePrintln("Welcome to SkillSocc!");
 }
 
 void loop() {
-  if (Serial.available() > 0) {
-    // char choice = Serial.read();
-    // if (choice == '1') {
-    //   buzzing(3);
-    //   playGame1();
-    // } else if (choice == '2') {
-    //   buzzing(3);
-    //   playGame2();
-    // } else {
-    //   Serial.println("Invalid input. Type '1' or '2'");  //// This error message is always shown once, no clue why
-    // }
+  // char choice = Serial.read();
+  // if (choice == '1') {
+  //   buzzing(3);
+  //   playGame1();
+  // } else if (choice == '2') {
+  //   buzzing(3);
+  //   playGame2();
+  // } else {
+  //   Serial.println("Invalid input. Type '1' or '2'");  //// This error message is always shown once, no clue why
+  // }
+  // Serial.println("Choose a game: Type '1' or '2'");
 
-    // Serial.println("Choose a game: Type '1' or '2'");
+  doublePrintln("Choose a game: Press Button '1' or '2'"); // type button
+  unsigned long startTime = millis();
+  int validInput = 0;
 
-    if (digitalRead(game1Button)) {
-      buzzing(3);
-      playGame1();
-    } else if (digitalRead(game2Button)) {
-      buzzing(3);
-      playGame2();
-    } else if (digitalRead(resetButton)) {
-      Serial.println("Game restart, please choose a game again!");
-    } else {
-      Serial.println("Invalid input.");  //// This error message is always shown once, no clue why
+  while (millis() - startTime < inputTimeout){
+    String BTInput = BTSerial.readString();
+    BTInput.trim();  // Remove the line terminator, e.g. '\r''\n', to allow for String comparison
+
+    if (digitalRead(game1Button) || BTInput == String("1")) {
+    buzzing(3);
+    playGame1();
+    validInput = 1;
+    } 
+    else if (digitalRead(game2Button) || BTInput == String("2")) {
+    buzzing(3);
+    playGame2();
+    validInput = 1;
+    } 
+    else if (digitalRead(resetButton) || BTInput == String("reset")) {
+    doublePrintln("Game restart, please choose a game again!");
+    validInput = 1;
+    } 
+    else if (BTInput.length() > 0) {
+      doublePrintln("Invalid input.");
     }
-    Serial.println("Choose a game: Press button '1' or '2'");
+    if (validInput) {
+      break;
+    }
+  }
+  if (!validInput) {  // Time-out
+    doublePrintln("Invalid input.");
   }
 }
